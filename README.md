@@ -1,65 +1,123 @@
-# [Nome do SDK] - Arara SDK
+# Arara PHP SDK
 
-Este repositório contém o SDK oficial da Arara para **[Linguagem/Plataforma]**.
+SDK PHP para integração com a API da [Arara](https://ararahq.com).
 
-> **Nota para o mantenedor:** Este é um template base. Ao usar este repositório, substitua as informações entre colchetes `[...]` pelas informações específicas do seu projeto.
+[![PHP Version](https://img.shields.io/badge/php-%5E8.4-blue)](https://www.php.net/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## 📋 Sobre
+> **[Read in English](README.en.md)**
 
-Descreva brevemente o que este SDK faz e quais serviços da Arara ele cobre.
+## Estado atual da SDK
 
-## 🚀 Instalação
+No estado atual, a SDK expõe:
 
-Instruções de como instalar o SDK na linguagem específica.
+- `Arara\Config` para configurar autenticação e transporte.
+- `Arara\Arara` como cliente principal.
+- `Arara::sendMessage()` para envio de mensagens via `POST /messages`.
 
-Exemplo genérico:
+## Requisitos
+
+- PHP 8.4+
+- Extensão JSON
+- Composer
+
+## Instalação
+
 ```bash
-# Comando de instalação
-install-command [package-name]
+composer require arara/arara-php-sdk
 ```
 
-## ⚡ Começando
+## Uso rápido
 
-Exemplo rápido de "Hello World" ou uso básico da biblioteca.
+### Criar configuração e cliente
 
-```[linguagem]
-// Insira aqui um exemplo de código
-initialize(apiKey);
-doSomething();
+```php
+use Arara\Arara;
+use Arara\Config;
+
+$config = new Config(
+    apiKey: 'sua-api-key',
+);
+
+$arara = new Arara($config);
 ```
 
-## 📂 Estrutura do Projeto
+### Enviar mensagem
 
-Explique brevemente como o código está organizado.
+```php
+$response = $arara->sendMessage(
+    receiver: '5511999999999',
+    templateName: 'order_confirmation',
+    variables: [
+        'orderId' => '12345',
+        'amount' => 'R$ 199,90',
+    ],
+);
+```
 
-*   `src/` ou `lib/`: Código fonte.
-*   `tests/`: Testes automatizados.
-*   `docs/`: Documentação adicional.
-*   `examples/`: Projetos de exemplo.
+`sendMessage()` retorna um `array` com o JSON de resposta da API.
 
-## 🤝 Como Contribuir
+### Configurações disponíveis
 
-Agradecemos o interesse em contribuir com o ecossistema Arara! Este projeto segue um fluxo de contribuição padrão para garantir a qualidade e consistência.
+```php
+use Arara\Config;
 
-### Fluxo de Trabalho (Workflow)
+$config = new Config(
+    apiKey: 'sua-api-key',
+    baseUrl: 'https://api.ararahq.com/api/v1',
+    timeout: 30,
+    retryTimes: 3,
+    retryDelayMs: 100,
+);
+```
 
-1.  **Fork** este repositório para a sua conta pessoal ou organização.
-2.  Crie uma **Branch** para a sua feature ou correção:
-    *   Use nomes descritivos, ex: `feat/nova-autenticacao`, `fix/erro-timeout`.
-3.  Faça suas alterações e **Commits**:
-    *   Escreva mensagens de commit claras e concisas (preferencialmente em inglês ou português, seguindo o padrão do projeto).
-4.  Faça o **Push** para o seu fork.
-5.  Abra um **Pull Request (PR)** para o repositório principal:
-    *   Descreva detalhadamente o que foi feito.
-    *   Linke issues relacionadas, se houver.
-    *   Aguarde a revisão da equipe.
+Parâmetros de `Config`:
 
-### Padrões de Código
+- `apiKey` (string): token de autenticação Bearer.
+- `baseUrl` (string): URL base da API.
+- `timeout` (int): timeout de requisição em segundos.
+- `retryTimes` (int): tentativas de retry (definido na configuração, ainda não aplicado automaticamente no cliente).
+- `retryDelayMs` (int): delay entre retries em ms (definido na configuração, ainda não aplicado automaticamente no cliente).
 
-*   Siga as convenções de estilo da linguagem (ex: PEP8 para Python, StandardJS para JS/TS, Go Fmt para Go).
-*   Mantenha a cobertura de testes. Se adicionar uma nova funcionalidade, adicione testes para ela.
-*   Documente métodos e classes públicas.
+### Injetar cliente HTTP customizado (opcional)
 
-## 📄 Licença
+```php
+use Arara\Arara;
+use Arara\Config;
+use GuzzleHttp\Client;
 
-Este projeto está licenciado sob a [Licença MIT](LICENSE).
+$config = new Config(apiKey: 'sua-api-key');
+$http = new Client();
+
+$arara = new Arara($config, $http);
+```
+
+Quando um `Client` customizado é injetado, ele é usado diretamente.
+
+## Endpoint utilizado
+
+- `POST /messages`
+
+Payload enviado por `sendMessage()`:
+
+```json
+{
+  "receiver": "5511999999999",
+  "templateName": "order_confirmation",
+  "variables": {}
+}
+```
+
+## Desenvolvimento
+
+```bash
+composer install
+composer test
+composer analyse
+composer format
+composer check
+```
+
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).

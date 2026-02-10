@@ -1,0 +1,15 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    tmpDir: .phpstan.cache
+    ignoreErrors:
+        # Mockery dynamic methods
+        - '#Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::#'
+        -
+            message: '#does not accept Mockery\\MockInterface#'
+            path: tests/
+        -
+            message: '#expects .*, Mockery\\MockInterface given#'
+            path: tests/

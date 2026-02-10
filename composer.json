@@ -1,0 +1,43 @@
+{
+    "name": "arara/arara-php-sdk",
+    "description": "SDK PHP para a API de WhatsApp da Arara",
+    "keywords": ["whatsapp", "arara", "sdk", "api", "sms", "messaging", "brazil"],
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.4",
+        "guzzlehttp/guzzle": "^7.0",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "liip/rmt": "^1.9",
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^1.10",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Arara\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Arara\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse src tests --level=8",
+        "format": "php-cs-fixer fix",
+        "check": [
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

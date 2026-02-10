@@ -16,3 +16,10 @@ __pycache__/
 *.egg-info/
 .env
 .env.local
+
+# PHP
+composer.lock
+.php-cs-fixer.cache
+.phpunit.cache/
+.phpstan.cache/
+coverage/
