@@ -23,3 +23,9 @@ composer.lock
 .phpunit.cache/
 .phpstan.cache/
 coverage/
+
+# AI
+AGENTS.md
+CLAUDE.md
+AGENTS.MD
+CLAUDE.MD
