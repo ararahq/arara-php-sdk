@@ -16,7 +16,7 @@ final class Arara
     {
         $this->config = $config;
         $this->client = $http ?? new Client([
-            'base_uri' => $config->baseUrl,
+            'base_uri' => $config->baseUrl . '/api/' . $config->apiVersion.'/',
             'timeout' => $config->timeout,
             'headers' => [
                 'Authorization' => 'Bearer ' . $config->apiKey,
@@ -27,7 +27,7 @@ final class Arara
 
     public function sendMessage(string $receiver, string $templateName, array $variables = []): array
     {
-        $response = $this->client->post('/messages', [
+        $response = $this->client->post('messages', [
             'json' => [
                 'receiver' => $receiver,
                 'templateName' => $templateName,
