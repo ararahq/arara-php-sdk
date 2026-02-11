@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Arara;
 
+/**
+ * Configuração de autenticação e transporte do SDK Arara.
+ */
 final readonly class Config
 {
     public const DEFAULT_BASE_URL = 'https://api.ararahq.com';

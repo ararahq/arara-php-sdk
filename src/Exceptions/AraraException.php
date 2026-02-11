@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Arara\Exceptions;
 
+/**
+ * Exceção base do SDK Arara. Todas as exceções HTTP estendem esta classe.
+ */
 class AraraException extends \Exception
 {
     /**

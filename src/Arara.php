@@ -13,12 +13,19 @@ use Arara\Exceptions\ValidationException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
+/**
+ * Cliente principal do SDK Arara para integração com a API de WhatsApp.
+ */
 final class Arara
 {
     private readonly Config $config;
 
     private readonly Client $client;
 
+    /**
+     * @param Config      $config Configuração de autenticação e transporte.
+     * @param Client|null $http   Cliente Guzzle customizado (opcional).
+     */
     public function __construct(Config $config, ?Client $http = null,)
     {
         $this->config = $config;
@@ -32,6 +39,18 @@ final class Arara
         ]);
     }
 
+    /**
+     * Envia uma mensagem via WhatsApp.
+     *
+     * @param string               $receiver     Destinatário no formato whatsapp:+<número>.
+     * @param string               $templateName Nome do template de mensagem.
+     * @param array<string, mixed> $variables    Variáveis do template.
+     *
+     * @return array<string, mixed> Resposta decodificada da API.
+     *
+     * @throws ValidationException Quando os parâmetros são inválidos.
+     * @throws AraraException      Quando a API retorna erro.
+     */
     public function sendMessage(string $receiver, string $templateName, array $variables = []): array
     {
         if (trim($receiver) === '') {
