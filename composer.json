@@ -1,11 +1,19 @@
 {
     "name": "arara/arara-php-sdk",
-    "description": "SDK PHP para a API de WhatsApp da Arara",
-    "keywords": ["whatsapp", "arara", "sdk", "api", "sms", "messaging", "brazil"],
+    "description": "Official PHP SDK for AraraHQ platform. Simple, typed, and developer-first.",
+    "keywords": [
+        "whatsapp",
+        "arara",
+        "sdk",
+        "api",
+        "sms",
+        "messaging",
+        "brazil"
+    ],
     "license": "MIT",
     "type": "library",
     "require": {
-        "php": "^8.4",
+        "php": "^8.2",
         "guzzlehttp/guzzle": "^7.0",
         "ext-json": "*"
     },
