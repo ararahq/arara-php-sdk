@@ -26,10 +26,25 @@ $sdk = new Arara($config);
 ### 1. Messages (`$sdk->messages`)
 
 ```php
+// Template standard
 $response = $sdk->messages->send(
     receiver: 'whatsapp:+5511999999999',
     templateName: 'welcome',
     variables: ['John']
+);
+
+// Template com Mídia (Header de Imagem/PDF)
+$response = $sdk->messages->send(
+    receiver: 'whatsapp:+5511999999999',
+    templateName: 'invoice_ready',
+    variables: ['John', 'January'],
+    mediaUrl: 'https://your-media.com/invoice.pdf'
+);
+
+// Mensagem de Sessão (Texto Livre)
+$response = $sdk->messages->send(
+    receiver: 'whatsapp:+5511999999999',
+    body: 'Olá! Como posso ajudar?'
 );
 ```
 

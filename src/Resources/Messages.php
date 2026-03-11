@@ -12,8 +12,13 @@ final class Messages extends BaseResource
      * @param array<string, mixed> $variables
      * @return array<string, mixed>
      */
-    public function send(string $receiver, string $templateName, array $variables = []): array
-    {
+    public function send(
+        string $receiver, 
+        ?string $templateName = null, 
+        array $variables = [], 
+        ?string $body = null, 
+        ?string $mediaUrl = null
+    ): array {
         if (trim($receiver) === '') {
             throw new ValidationException(['message' => 'The receiver field is required.']);
         }
@@ -22,16 +27,25 @@ final class Messages extends BaseResource
             throw new ValidationException(['message' => 'The receiver must follow the format whatsapp:+<number> (e.g. whatsapp:+5511999999999).']);
         }
 
-        if (trim($templateName) === '') {
-            throw new ValidationException(['message' => 'The templateName field is required.']);
+        $payload = [
+            'receiver' => $receiver,
+        ];
+
+        if ($templateName) {
+            $payload['templateName'] = $templateName;
+            $payload['variables'] = $variables;
+        }
+
+        if ($body) {
+            $payload['body'] = $body;
+        }
+
+        if ($mediaUrl) {
+            $payload['media_url'] = $mediaUrl;
         }
 
         return $this->post('messages', [
-            'json' => [
-                'receiver' => $receiver,
-                'templateName' => $templateName,
-                'variables' => $variables,
-            ],
+            'json' => $payload,
         ]);
     }
 }
