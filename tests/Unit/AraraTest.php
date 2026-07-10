@@ -6,11 +6,9 @@ namespace Arara\Tests\Unit;
 
 use Arara\Arara;
 use Arara\Config;
-use Arara\Exceptions\AraraException;
 use Arara\Exceptions\AuthenticationException;
 use Arara\Exceptions\BadRequestException;
-use Arara\Exceptions\InternalServerException;
-use Arara\Exceptions\NotFoundException;
+use Arara\Exceptions\RateLimitException;
 use Arara\Exceptions\ValidationException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
@@ -91,7 +89,7 @@ final class AraraTest extends TestCase
         $this->expectException(AuthenticationException::class);
         // We no longer check for exact message in handleException logic in this SDK
         // but the types must match.
-        
+
         $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
     }
 
@@ -102,6 +100,27 @@ final class AraraTest extends TestCase
         $this->expectException(BadRequestException::class);
 
         $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
+    }
+
+    public function test_send_message_throws_rate_limit_exception_on_429_with_retry_after(): void
+    {
+        $response = new Response(429, ['Retry-After' => '7'], '{"error":{"code":"RATE_LIMITED","message":"Too many requests"}}');
+        $request = new Request('POST', 'messages');
+
+        $this->client
+            ->shouldReceive('post')
+            ->once()
+            ->andThrow(RequestException::create($request, $response));
+
+        try {
+            $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
+            $this->fail('Expected RateLimitException');
+        } catch (RateLimitException $e) {
+            $this->assertSame(429, $e->statusCode);
+            $this->assertSame(7, $e->retryAfter);
+            $this->assertSame('RATE_LIMITED', $e->errorCode);
+            $this->assertSame('Too many requests', $e->getMessage());
+        }
     }
 
     private function mockHttpError(int $statusCode, string $body): void
