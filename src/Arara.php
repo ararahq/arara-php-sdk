@@ -44,7 +44,7 @@ final class Arara
         ));
 
         return new Client([
-            'base_uri' => "{$config->baseUrl}/api/{$config->apiVersion}/",
+            'base_uri' => "{$config->baseUrl}/{$config->apiVersion}/",
             'handler' => $stack,
             'timeout' => $config->timeout,
             'headers' => [
