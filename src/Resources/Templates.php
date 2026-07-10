@@ -11,7 +11,7 @@ final class Templates extends BaseResource
      */
     public function list(): array
     {
-        return $this->get('templates');
+        return $this->httpGet('templates');
     }
 
     /**
@@ -19,7 +19,7 @@ final class Templates extends BaseResource
      */
     public function get(string $name): array
     {
-        return $this->get("templates/{$name}");
+        return $this->httpGet("templates/{$name}");
     }
 
     /**
@@ -28,7 +28,7 @@ final class Templates extends BaseResource
      */
     public function create(array $data): array
     {
-        return $this->post('templates', [
+        return $this->httpPost('templates', [
             'json' => $data,
         ]);
     }
@@ -38,6 +38,6 @@ final class Templates extends BaseResource
      */
     public function delete(string $name): array
     {
-        return $this->delete("templates/{$name}");
+        return $this->httpDelete("templates/{$name}");
     }
 }

@@ -11,7 +11,7 @@ final class Organizations extends BaseResource
      */
     public function getWebhook(): array
     {
-        return $this->get('organizations/webhook');
+        return $this->httpGet('organizations/webhook');
     }
 
     /**
@@ -20,7 +20,7 @@ final class Organizations extends BaseResource
      */
     public function updateWebhook(array $data): array
     {
-        return $this->post('organizations/webhook', [
+        return $this->httpPost('organizations/webhook', [
             'json' => $data,
         ]);
     }
