@@ -11,7 +11,7 @@ final class Users extends BaseResource
      */
     public function getMe(): array
     {
-        return $this->get('users/me');
+        return $this->httpGet('users/me');
     }
 
     /**
@@ -20,7 +20,7 @@ final class Users extends BaseResource
      */
     public function update(array $data): array
     {
-        return $this->post('users/me', [
+        return $this->httpPost('users/me', [
             'json' => $data,
         ]);
     }
