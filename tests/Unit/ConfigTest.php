@@ -14,7 +14,7 @@ final class ConfigTest extends TestCase
         $config = new Config(apiKey: 'test-key');
 
         $this->assertSame('test-key', $config->apiKey);
-        $this->assertSame('https://api.ararahq.com/api', $config->baseUrl);
+        $this->assertSame('https://api.ararahq.com', $config->baseUrl);
         $this->assertSame(30, $config->timeout);
         $this->assertSame(3, $config->retryTimes);
         $this->assertSame(100, $config->retryDelayMs);
