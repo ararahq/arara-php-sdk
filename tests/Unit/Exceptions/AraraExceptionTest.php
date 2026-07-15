@@ -35,12 +35,12 @@ final class AraraExceptionTest extends TestCase
 
     public function test_exception_parses_nested_error_envelope(): void
     {
-        $response = ['error' => ['code' => 'INSUFFICIENT_CREDITS', 'message' => 'Saldo insuficiente', 'details' => []]];
+        $response = ['error' => ['code' => 'INSUFFICIENT_FUNDS', 'message' => 'Saldo insuficiente', 'details' => []]];
 
         $exception = new AraraException(400, $response);
 
         $this->assertSame('Saldo insuficiente', $exception->getMessage());
-        $this->assertSame('INSUFFICIENT_CREDITS', $exception->errorCode);
+        $this->assertSame('INSUFFICIENT_FUNDS', $exception->errorCode);
         $this->assertSame($response, $exception->response);
     }
 

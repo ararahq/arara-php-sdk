@@ -9,7 +9,7 @@ namespace Arara;
  */
 final readonly class Config
 {
-    public const DEFAULT_BASE_URL = 'https://api.ararahq.com';
+    public const DEFAULT_BASE_URL = 'https://api.ararahq.com/api';
     public const DEFAULT_TIMEOUT = 30;
     public const DEFAULT_RETRY_TIMES = 3;
     public const DEFAULT_RETRY_DELAY_MS = 100;

@@ -45,7 +45,7 @@ final class AraraTest extends TestCase
             ->with('messages', Mockery::type('array'))
             ->andReturn(new Response(200, [], (string) json_encode($body)));
 
-        $result = $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
+        $result = $this->sdk->messages->send('whatsapp:+5511987654321', 'welcome');
 
         $this->assertSame($body, $result);
     }
@@ -71,7 +71,7 @@ final class AraraTest extends TestCase
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The receiver must follow the format whatsapp:+<number>');
 
-        $this->sdk->messages->send('5511999999999', 'welcome');
+        $this->sdk->messages->send('5511987654321', 'welcome');
     }
 
     public function test_send_message_throws_validation_when_template_name_empty(): void
@@ -79,7 +79,7 @@ final class AraraTest extends TestCase
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The templateName field is required.');
 
-        $this->sdk->messages->send('whatsapp:+5511999999999', '');
+        $this->sdk->messages->send('whatsapp:+5511987654321', '');
     }
 
     public function test_send_message_throws_authentication_exception_on_401(): void
@@ -90,7 +90,7 @@ final class AraraTest extends TestCase
         // We no longer check for exact message in handleException logic in this SDK
         // but the types must match.
 
-        $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
+        $this->sdk->messages->send('whatsapp:+5511987654321', 'welcome');
     }
 
     public function test_send_message_throws_bad_request_exception_on_400(): void
@@ -99,7 +99,7 @@ final class AraraTest extends TestCase
 
         $this->expectException(BadRequestException::class);
 
-        $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
+        $this->sdk->messages->send('whatsapp:+5511987654321', 'welcome');
     }
 
     public function test_send_message_throws_rate_limit_exception_on_429_with_retry_after(): void
@@ -113,7 +113,7 @@ final class AraraTest extends TestCase
             ->andThrow(RequestException::create($request, $response));
 
         try {
-            $this->sdk->messages->send('whatsapp:+5511999999999', 'welcome');
+            $this->sdk->messages->send('whatsapp:+5511987654321', 'welcome');
             $this->fail('Expected RateLimitException');
         } catch (RateLimitException $e) {
             $this->assertSame(429, $e->statusCode);
