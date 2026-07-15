@@ -24,7 +24,7 @@ final class Messages extends BaseResource
         }
 
         if (! preg_match('/^whatsapp:\+\d{8,15}$/', $receiver)) {
-            throw new ValidationException(['message' => 'The receiver must follow the format whatsapp:+<number> (e.g. whatsapp:+5511999999999).']);
+            throw new ValidationException(['message' => 'The receiver must follow the format whatsapp:+<number> (e.g. whatsapp:+5511987654321).']);
         }
 
         if ($templateName !== null && trim($templateName) === '') {

@@ -20,7 +20,7 @@ use Arara\Arara;
 use Arara\Config;
 
 $config = new Config(
-    apiKey: 'sk_live_...',
+    apiKey: 'ara_live_...',
 );
 
 $sdk = new Arara($config);
@@ -33,14 +33,14 @@ $sdk = new Arara($config);
 ```php
 // Template standard
 $response = $sdk->messages->send(
-    receiver: 'whatsapp:+5511999999999',
+    receiver: 'whatsapp:+5511987654321',
     templateName: 'welcome',
     variables: ['John']
 );
 
 // Template com Mídia (Header de Imagem/PDF)
 $response = $sdk->messages->send(
-    receiver: 'whatsapp:+5511999999999',
+    receiver: 'whatsapp:+5511987654321',
     templateName: 'invoice_ready',
     variables: ['John', 'January'],
     mediaUrl: 'https://your-media.com/invoice.pdf'
@@ -48,7 +48,7 @@ $response = $sdk->messages->send(
 
 // Mensagem de Sessão (Texto Livre)
 $response = $sdk->messages->send(
-    receiver: 'whatsapp:+5511999999999',
+    receiver: 'whatsapp:+5511987654321',
     body: 'Olá! Como posso ajudar?'
 );
 ```
