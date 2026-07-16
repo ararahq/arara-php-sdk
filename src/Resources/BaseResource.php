@@ -55,6 +55,36 @@ abstract class BaseResource
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      */
+    protected function httpPatch(string $endpoint, array $options = []): array
+    {
+        try {
+            $response = $this->client->patch($endpoint, $options);
+
+            return json_decode($response->getBody()->getContents(), true) ?? [];
+        } catch (RequestException $e) {
+            throw $this->handleException($e);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    protected function httpPut(string $endpoint, array $options = []): array
+    {
+        try {
+            $response = $this->client->put($endpoint, $options);
+
+            return json_decode($response->getBody()->getContents(), true) ?? [];
+        } catch (RequestException $e) {
+            throw $this->handleException($e);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
     protected function httpDelete(string $endpoint, array $options = []): array
     {
         try {
