@@ -77,6 +77,20 @@ $sdk->templates->delete('template-name');
 use Arara\Utils\WebhookUtils;
 
 $payload = file_get_contents('php://input');
+
+// Valide a assinatura antes de processar. O payload precisa ser o corpo cru.
+$isValid = WebhookUtils::verifySignature(
+    payload: $payload,
+    signature: $_SERVER['HTTP_X_ARARA_SIGNATURE'] ?? '',
+    secret: getenv('ARARA_WEBHOOK_SECRET'),
+    timestamp: $_SERVER['HTTP_X_ARARA_TIMESTAMP'] ?? null,
+);
+
+if (!$isValid) {
+    http_response_code(401);
+    exit;
+}
+
 $data = json_decode($payload, true);
 
 if (WebhookUtils::isMessageStatusEvent($data)) {
