@@ -4,99 +4,84 @@ declare(strict_types=1);
 
 namespace Arara\Tests\Unit;
 
-use Arara\Arara;
-use Arara\Config;
 use Arara\Exceptions\NotFoundException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Request;
+use Arara\Resources\Templates;
+use Arara\Tests\Support\RecordingClient;
 use GuzzleHttp\Psr7\Response;
-use Mockery;
-use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
 
 final class TemplatesTest extends TestCase
 {
-    use MockeryPHPUnitIntegration;
+    private const ID = '3f1c2a9e-8b7d-4c21-9f3a-1b2c3d4e5f60';
 
-    private Mockery\MockInterface&Client $client;
-
-    private Arara $sdk;
-
-    protected function setUp(): void
+    public function test_list_returns_paginated_response_and_sends_filters(): void
     {
-        $this->client = Mockery::mock(Client::class);
-        $this->sdk = new Arara(new Config(apiKey: 'test-key'), $this->client);
+        $body = [
+            'data' => [['id' => self::ID, 'name' => 'welcome'], 'lixo'],
+            'pagination' => ['page' => 0, 'size' => 50, 'totalElements' => 51, 'totalPages' => 2],
+        ];
+        $http = new RecordingClient([new Response(200, [], (string) json_encode($body))]);
+
+        $page = (new Templates($http->client))->list(status: 'APPROVED', name: 'welcome');
+
+        $this->assertSame([['id' => self::ID, 'name' => 'welcome']], $page->data);
+        $this->assertSame(51, $page->pagination->totalElements);
+        $this->assertSame(2, $page->pagination->totalPages);
+        $this->assertTrue($page->hasNextPage());
+        parse_str($http->request(0)->getUri()->getQuery(), $query);
+        $this->assertSame(['page' => '0', 'size' => '50', 'name' => 'welcome', 'status' => 'APPROVED'], $query);
     }
 
-    public function test_list_calls_client_once_and_returns_decoded_response(): void
+    public function test_get_status_and_delete_address_the_template_by_id(): void
     {
-        $body = ['data' => [['name' => 'welcome', 'status' => 'approved']]];
+        $http = new RecordingClient([
+            new Response(200, [], '{"id":"x"}'),
+            new Response(200, [], '{"status":"APPROVED"}'),
+            new Response(204),
+        ]);
+        $templates = new Templates($http->client);
 
-        $this->client
-            ->shouldReceive('get')
-            ->once()
-            ->with('templates', [])
-            ->andReturn(new Response(200, [], (string) json_encode($body)));
+        $templates->get(self::ID);
+        $templates->getStatus(self::ID);
+        $this->assertSame([], $templates->delete(self::ID));
 
-        $this->assertSame($body, $this->sdk->templates->list());
+        $this->assertSame('/v1/templates/' . self::ID, $http->request(0)->getUri()->getPath());
+        $this->assertSame('/v1/templates/' . self::ID . '/status', $http->request(1)->getUri()->getPath());
+        $this->assertSame('DELETE', $http->request(2)->getMethod());
+        $this->assertSame('/v1/templates/' . self::ID, $http->request(2)->getUri()->getPath());
     }
 
-    public function test_get_calls_client_once_and_returns_decoded_response(): void
+    public function test_analytics_by_id_and_global(): void
     {
-        $body = ['name' => 'welcome', 'status' => 'approved'];
+        $http = new RecordingClient([new Response(200, [], '{}'), new Response(200, [], '{}')]);
+        $templates = new Templates($http->client);
 
-        $this->client
-            ->shouldReceive('get')
-            ->once()
-            ->with('templates/welcome', [])
-            ->andReturn(new Response(200, [], (string) json_encode($body)));
+        $templates->analytics(self::ID, '7d');
+        $templates->analytics();
 
-        $this->assertSame($body, $this->sdk->templates->get('welcome'));
+        $this->assertSame('/v1/templates/' . self::ID . '/analytics', $http->request(0)->getUri()->getPath());
+        $this->assertSame('period=7d', $http->request(0)->getUri()->getQuery());
+        $this->assertSame('/v1/templates/analytics', $http->request(1)->getUri()->getPath());
+        $this->assertSame('period=30d', $http->request(1)->getUri()->getQuery());
     }
 
-    public function test_delete_calls_client_once_and_returns_decoded_response(): void
+    public function test_create_posts_payload(): void
     {
-        $body = ['deleted' => true];
+        $http = new RecordingClient([new Response(201, [], '{"id":"x"}')]);
 
-        $this->client
-            ->shouldReceive('delete')
-            ->once()
-            ->with('templates/welcome', [])
-            ->andReturn(new Response(200, [], (string) json_encode($body)));
+        (new Templates($http->client))->create(['name' => 'welcome', 'body' => 'Ola {{1}}']);
 
-        $this->assertSame($body, $this->sdk->templates->delete('welcome'));
+        $this->assertSame('{"name":"welcome","body":"Ola {{1}}"}', (string) $http->request(0)->getBody());
     }
 
-    public function test_create_posts_payload_and_returns_decoded_response(): void
+    public function test_get_maps_404_envelope_to_not_found_exception(): void
     {
-        $data = ['name' => 'welcome', 'body' => 'Ola {{1}}'];
-        $body = ['name' => 'welcome', 'status' => 'pending'];
-
-        $this->client
-            ->shouldReceive('post')
-            ->once()
-            ->with('templates', ['json' => $data])
-            ->andReturn(new Response(201, [], (string) json_encode($body)));
-
-        $this->assertSame($body, $this->sdk->templates->create($data));
-    }
-
-    public function test_get_maps_404_with_nested_envelope_to_not_found_exception(): void
-    {
-        $response = new Response(404, [], '{"error":{"code":"TEMPLATE_NOT_FOUND","message":"Template not found","details":{}}}');
-        $request = new Request('GET', 'templates/missing');
-
-        $this->client
-            ->shouldReceive('get')
-            ->once()
-            ->andThrow(RequestException::create($request, $response));
+        $http = new RecordingClient([new Response(404, [], '{"error":{"code":"TEMPLATE_NOT_FOUND","message":"Template not found","details":{}}}')]);
 
         try {
-            $this->sdk->templates->get('missing');
+            (new Templates($http->client))->get(self::ID);
             $this->fail('Expected NotFoundException');
         } catch (NotFoundException $e) {
-            $this->assertSame(404, $e->statusCode);
             $this->assertSame('TEMPLATE_NOT_FOUND', $e->errorCode);
             $this->assertSame('Template not found', $e->getMessage());
         }

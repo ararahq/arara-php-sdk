@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Arara\Resources;
 
+use Arara\Pagination\PaginatedResponse;
+
 final class SmartLinks extends BaseResource
 {
+    public const DEFAULT_PAGE_SIZE = 50;
+
     /**
-     * POST /v1/smart-links/whatsapp
+     * POST /v1/smart-links/whatsapp.
      *
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -18,7 +22,7 @@ final class SmartLinks extends BaseResource
     }
 
     /**
-     * PUT /v1/smart-links/whatsapp/{id}
+     * PUT /v1/smart-links/whatsapp/{id}.
      *
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -29,17 +33,17 @@ final class SmartLinks extends BaseResource
     }
 
     /**
-     * GET /v1/smart-links/whatsapp
-     *
-     * @return array<string, mixed>
+     * GET /v1/smart-links/whatsapp.
      */
-    public function list(): array
+    public function list(int $page = 0, int $size = self::DEFAULT_PAGE_SIZE): PaginatedResponse
     {
-        return $this->httpGet('smart-links/whatsapp');
+        return PaginatedResponse::fromArray(
+            $this->httpGet('smart-links/whatsapp', ['query' => ['page' => $page, 'size' => $size]]),
+        );
     }
 
     /**
-     * GET /v1/smart-links/whatsapp/{id}/stats
+     * GET /v1/smart-links/whatsapp/{id}/stats.
      *
      * @return array<string, mixed>
      */
