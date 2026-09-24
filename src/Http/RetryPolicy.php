@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Arara\Http;
 
 use Arara\Config;
+use Arara\Support\IdempotencyKey;
 use GuzzleHttp\Exception\ConnectException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -12,6 +13,9 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * Política de retry do SDK: reenvia em erro de conexão, 5xx e 429,
  * com backoff exponencial e respeito ao header Retry-After.
+ *
+ * POST e PATCH só são repetidos quando a request carrega Idempotency-Key:
+ * sem ela, um retry depois do aceite duplicaria o envio (e a cobrança).
  */
 final class RetryPolicy
 {
@@ -20,6 +24,8 @@ final class RetryPolicy
     private const HTTP_TOO_MANY_REQUESTS = 429;
 
     private const HTTP_INTERNAL_SERVER_ERROR = 500;
+
+    private const NON_IDEMPOTENT_METHODS = ['POST', 'PATCH'];
 
     public static function decider(Config $config): callable
     {
@@ -30,6 +36,10 @@ final class RetryPolicy
             ?\Throwable $exception = null,
         ) use ($config): bool {
             if ($retries >= $config->retryTimes) {
+                return false;
+            }
+
+            if (! self::isSafeToRepeat($request)) {
                 return false;
             }
 
@@ -52,6 +62,15 @@ final class RetryPolicy
 
             return $config->retryDelayMs * (2 ** max(0, $retries - 1));
         };
+    }
+
+    private static function isSafeToRepeat(RequestInterface $request): bool
+    {
+        if (! in_array(strtoupper($request->getMethod()), self::NON_IDEMPOTENT_METHODS, true)) {
+            return true;
+        }
+
+        return trim($request->getHeaderLine(IdempotencyKey::HEADER)) !== '';
     }
 
     private static function isRetryableStatus(?int $statusCode): bool

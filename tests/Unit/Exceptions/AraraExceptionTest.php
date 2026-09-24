@@ -44,6 +44,15 @@ final class AraraExceptionTest extends TestCase
         $this->assertSame($response, $exception->response);
     }
 
+    public function test_exception_exposes_details_from_envelope(): void
+    {
+        $exception = new AraraException(403, ['error' => ['code' => 'X', 'details' => ['feature' => 'flows']]], null, 5);
+
+        $this->assertSame(['feature' => 'flows'], $exception->details);
+        $this->assertSame(5, $exception->retryAfter);
+        $this->assertSame([], (new AraraException(400, ['error' => ['details' => 'bad']]))->details);
+    }
+
     public function test_exception_error_code_is_null_for_flat_response(): void
     {
         $exception = new AraraException(400, ['message' => 'Bad request body']);
