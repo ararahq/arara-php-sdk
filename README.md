@@ -26,52 +26,93 @@ $config = new Config(
 $sdk = new Arara($config);
 ```
 
+## Permissões da chave
+
+Chave com permissão `READ` só lê messages, campaigns, templates, numbers, automations, flows e charges. **`contacts`, `conversations`, `wallet`, `smartLinks`, `optOuts` (leitura) e `auth()->me()` exigem chave `ADMIN`.** Sem permissão, a API responde 403 e o SDK lança `AuthenticationException` (statusCode 403).
+
 ## Resources
 
 ### 1. Messages (`$sdk->messages`)
 
+O `receiver` aceita `whatsapp:+5511987654321`, `+5511987654321` ou `5511987654321`.
+
+Toda chamada de envio manda `Idempotency-Key`. Se você não passar uma, o SDK gera um UUID e reaproveita a mesma chave em todos os retries daquela chamada, então um timeout seguido de retry nunca duplica o envio. Passe a sua (`idempotencyKey: 'pedido-42'`) para deduplicar entre execuções do seu sistema.
+
 ```php
-// Template standard
+// Template
 $response = $sdk->messages->send(
-    receiver: 'whatsapp:+5511987654321',
+    receiver: '+5511987654321',
     templateName: 'welcome',
-    variables: ['John']
+    variables: ['John'],
+    idempotencyKey: 'pedido-42',
 );
 
-// Template com Mídia (Header de Imagem/PDF)
+// Template com mídia no header
 $response = $sdk->messages->send(
-    receiver: 'whatsapp:+5511987654321',
+    receiver: '5511987654321',
     templateName: 'invoice_ready',
     variables: ['John', 'January'],
-    mediaUrl: 'https://your-media.com/invoice.pdf'
+    mediaUrl: 'https://your-media.com/invoice.pdf',
 );
 
-// Mensagem de Sessão (Texto Livre)
+// Texto livre (janela de 24h) com campos extras do contrato
 $response = $sdk->messages->send(
     receiver: 'whatsapp:+5511987654321',
-    body: 'Olá! Como posso ajudar?'
+    body: 'Olá! Como posso ajudar?',
+    extra: ['sender' => '+5511900000000'],
 );
+
+// Consultar uma mensagem
+$message = $sdk->messages->get($response['id']);
+
+// Lote (até 1000 mensagens do mesmo template)
+$batch = $sdk->messages->sendBatch('welcome', [
+    ['receiver' => '+5511987654321', 'variables' => ['Ana']],
+    ['receiver' => '+5521987654321', 'variables' => ['Bruno']],
+]);
 ```
 
 ### 2. Templates (`$sdk->templates`)
 
-```php
-$templates = $sdk->templates->list();
+Templates são endereçados pelo **id** (UUID), não pelo nome.
 
-$details = $sdk->templates->get('template-name');
+```php
+$page = $sdk->templates->list(page: 0, size: 50, status: 'APPROVED');
+foreach ($page->data as $template) {
+    echo $template['id'], ' ', $template['name'], PHP_EOL;
+}
+$page->pagination->totalPages;
+$page->hasNextPage();
+
+// Buscar pelo nome: filtre a lista
+$welcome = $sdk->templates->list(name: 'welcome')->data[0] ?? null;
+
+$details = $sdk->templates->get($welcome['id']);
+$status = $sdk->templates->getStatus($welcome['id']);
+$stats = $sdk->templates->analytics($welcome['id'], '7d');
 
 $sdk->templates->create([
     'name' => 'promo_christmas',
     'category' => 'MARKETING',
     'language' => 'pt_BR',
     'body' => 'Hi {{1}}, check our Christmas deals!',
-    'samples' => ['John']
+    'samples' => ['John'],
 ]);
 
-$sdk->templates->delete('template-name');
+$sdk->templates->delete($welcome['id']);
 ```
 
-### 3. Webhook Events
+### 3. Outros recursos
+
+```php
+$sdk->campaigns->create([...]);           // Idempotency-Key automático
+$sdk->smartLinks->list(page: 0, size: 50); // PaginatedResponse
+$sdk->optOuts->add('+5511987654321', 'pediu para sair');
+$sdk->optOuts->remove('+5511987654321');
+$me = $sdk->auth()->me();                  // GET /auth/me (chave ADMIN)
+```
+
+### 4. Webhook Events
 
 ```php
 use Arara\Utils\WebhookUtils;
@@ -107,16 +148,35 @@ if (WebhookUtils::isInboundMessageEvent($data)) {
 
 ## Error Handling
 
+Toda falha HTTP vira uma `Arara\Exceptions\AraraException` com `statusCode`, `errorCode`, `getMessage()`, `details` e `retryAfter`.
+
+| Situação | Exceção |
+|---|---|
+| 400 | `BadRequestException` |
+| 401, ou 403 sem código (chave inválida/sem permissão) | `AuthenticationException` |
+| 403 `PLAN_FEATURE_LOCKED` | `PlanFeatureLockedException` (`feature`, `currentPlan`, `upgradeTo`) |
+| outro 403 com código | `ForbiddenException` |
+| 404 | `NotFoundException` |
+| 422 | `ValidationException` |
+| 429 | `RateLimitException` (`retryAfter`) |
+| 5xx | `InternalServerException` |
+
 ```php
 use Arara\Exceptions\AraraException;
+use Arara\Exceptions\PlanFeatureLockedException;
 
 try {
-    $sdk->messages->send(...);
+    $sdk->messages->send('+5511987654321', 'welcome');
+} catch (PlanFeatureLockedException $e) {
+    echo "Disponível a partir do plano {$e->upgradeTo}";
 } catch (AraraException $e) {
-    echo "Error {$e->statusCode}: {$e->getMessage()}";
-    print_r($e->response);
+    echo "Error {$e->statusCode} {$e->errorCode}: {$e->getMessage()}";
 }
 ```
+
+## Migrando da 1.x
+
+Veja o [CHANGELOG](CHANGELOG.md): `users`, `organizations` e `apiKeys` saíram; templates usam id; listas de templates e smart links são paginadas.
 
 ## License
 
