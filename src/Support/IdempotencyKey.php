@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Arara\Support;
 
+use Arara\Exceptions\ValidationException;
+
 /**
  * Gera o valor do header Idempotency-Key (UUID v4).
  */
@@ -20,8 +22,21 @@ final class IdempotencyKey
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 
+    /**
+     * null gera um UUID novo; chave informada é usada sem espaços nas pontas e não pode ficar vazia.
+     */
     public static function resolve(?string $key): string
     {
-        return $key !== null && trim($key) !== '' ? $key : self::generate();
+        if ($key === null) {
+            return self::generate();
+        }
+
+        $trimmed = trim($key);
+
+        if ($trimmed === '') {
+            throw new ValidationException(['message' => 'The idempotencyKey must not be blank; pass null to let the SDK generate one.']);
+        }
+
+        return $trimmed;
     }
 }
