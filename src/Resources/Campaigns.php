@@ -7,21 +7,18 @@ namespace Arara\Resources;
 final class Campaigns extends BaseResource
 {
     /**
-     * POST /v1/campaigns
+     * POST /v1/campaigns.
      *
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
     public function create(array $data, ?string $idempotencyKey = null): array
     {
-        return $this->httpPost('campaigns', [
-            'json' => $data,
-            'headers' => ['Idempotency-Key' => $idempotencyKey ?? self::generateIdempotencyKey()],
-        ]);
+        return $this->httpPost('campaigns', $this->withIdempotencyKey(['json' => $data], $idempotencyKey));
     }
 
     /**
-     * GET /v1/campaigns
+     * GET /v1/campaigns.
      *
      * @return array<string, mixed>
      */
@@ -37,7 +34,7 @@ final class Campaigns extends BaseResource
     }
 
     /**
-     * GET /v1/campaigns/estimate
+     * GET /v1/campaigns/estimate.
      *
      * @return array<string, mixed>
      */
@@ -47,7 +44,7 @@ final class Campaigns extends BaseResource
     }
 
     /**
-     * GET /v1/campaigns/{id}
+     * GET /v1/campaigns/{id}.
      *
      * @return array<string, mixed>
      */
@@ -57,27 +54,12 @@ final class Campaigns extends BaseResource
     }
 
     /**
-     * POST /v1/campaigns/{id}/cancel
+     * POST /v1/campaigns/{id}/cancel.
      *
      * @return array<string, mixed>
      */
     public function cancel(string $id): array
     {
         return $this->httpPost("campaigns/{$id}/cancel");
-    }
-
-    private static function generateIdempotencyKey(): string
-    {
-        return sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0x0fff) | 0x4000,
-            random_int(0, 0x3fff) | 0x8000,
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0xffff),
-        );
     }
 }

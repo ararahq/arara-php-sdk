@@ -52,6 +52,33 @@ final class RetryPolicyTest extends TestCase
         $this->assertFalse($decider(0, $this->request, new Response(200)));
     }
 
+    public function test_decider_never_retries_post_without_idempotency_key(): void
+    {
+        $decider = RetryPolicy::decider($this->config);
+        $post = new Request('POST', 'messages');
+
+        $this->assertFalse($decider(0, $post, new Response(503)));
+        $this->assertFalse($decider(0, $post, null, new ConnectException('timeout', $post)));
+        $this->assertFalse($decider(0, new Request('PATCH', 'contacts/1'), new Response(500)));
+    }
+
+    public function test_decider_retries_post_that_carries_idempotency_key(): void
+    {
+        $decider = RetryPolicy::decider($this->config);
+        $post = new Request('POST', 'messages', ['Idempotency-Key' => 'abc']);
+
+        $this->assertTrue($decider(0, $post, new Response(503)));
+        $this->assertTrue($decider(0, $post, null, new ConnectException('timeout', $post)));
+    }
+
+    public function test_decider_still_retries_idempotent_methods_without_key(): void
+    {
+        $decider = RetryPolicy::decider($this->config);
+
+        $this->assertTrue($decider(0, new Request('DELETE', 'templates/1'), new Response(502)));
+        $this->assertTrue($decider(0, new Request('PUT', 'smart-links/whatsapp/1'), new Response(502)));
+    }
+
     public function test_decider_stops_after_configured_retries(): void
     {
         $decider = RetryPolicy::decider($this->config);

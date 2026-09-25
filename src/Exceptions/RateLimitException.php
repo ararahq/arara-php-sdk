@@ -6,14 +6,16 @@ namespace Arara\Exceptions;
 
 final class RateLimitException extends AraraException
 {
+    public const STATUS = 429;
+
     /**
      * @param array<string, mixed>|null $response
      */
     public function __construct(
         ?array $response = null,
-        public readonly ?int $retryAfter = null,
+        ?int $retryAfter = null,
         ?string $message = null,
     ) {
-        parent::__construct(429, $response, $message);
+        parent::__construct(self::STATUS, $response, $message, $retryAfter);
     }
 }

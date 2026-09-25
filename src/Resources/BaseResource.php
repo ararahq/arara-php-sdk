@@ -7,15 +7,26 @@ namespace Arara\Resources;
 use Arara\Exceptions\AraraException;
 use Arara\Exceptions\AuthenticationException;
 use Arara\Exceptions\BadRequestException;
+use Arara\Exceptions\ForbiddenException;
 use Arara\Exceptions\InternalServerException;
 use Arara\Exceptions\NotFoundException;
+use Arara\Exceptions\PlanFeatureLockedException;
 use Arara\Exceptions\RateLimitException;
 use Arara\Exceptions\ValidationException;
+use Arara\Support\IdempotencyKey;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 abstract class BaseResource
 {
+    private const HTTP_BAD_REQUEST = 400;
+
+    private const HTTP_UNAUTHORIZED = 401;
+
+    private const HTTP_NOT_FOUND = 404;
+
+    private const HTTP_UNPROCESSABLE = 422;
+
     public function __construct(
         protected readonly Client $client,
     ) {
@@ -96,21 +107,70 @@ abstract class BaseResource
         }
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    protected function withIdempotencyKey(array $options, ?string $idempotencyKey): array
+    {
+        $headers = is_array($options['headers'] ?? null) ? $options['headers'] : [];
+        $headers[IdempotencyKey::HEADER] = IdempotencyKey::resolve($idempotencyKey);
+        $options['headers'] = $headers;
+
+        return $options;
+    }
+
     private function handleException(RequestException $e): AraraException
     {
-        $statusCode = $e->getResponse()?->getStatusCode() ?? 500;
-        $body = json_decode((string) $e->getResponse()?->getBody(), true);
-        $body = is_array($body) ? $body : null;
+        $statusCode = $e->getResponse()?->getStatusCode() ?? InternalServerException::DEFAULT_STATUS;
+        $body = self::decodeBody(trim((string) $e->getResponse()?->getBody()));
+        $retryAfter = $this->parseRetryAfter($e);
 
-        return match ($statusCode) {
-            400 => new BadRequestException($body),
-            401 => new AuthenticationException($body),
-            404 => new NotFoundException($body),
-            422 => new ValidationException($body),
-            429 => new RateLimitException($body, $this->parseRetryAfter($e)),
-            500 => new InternalServerException($body),
-            default => new AraraException($statusCode, $body),
+        return match (true) {
+            $statusCode === self::HTTP_BAD_REQUEST => new BadRequestException($body),
+            $statusCode === self::HTTP_UNAUTHORIZED => new AuthenticationException($body),
+            $statusCode === ForbiddenException::STATUS => $this->forbidden($body),
+            $statusCode === self::HTTP_NOT_FOUND => new NotFoundException($body),
+            $statusCode === self::HTTP_UNPROCESSABLE => new ValidationException($body),
+            $statusCode === RateLimitException::STATUS => new RateLimitException($body, $retryAfter),
+            $statusCode >= InternalServerException::DEFAULT_STATUS => new InternalServerException($body, $statusCode, $retryAfter),
+            default => new AraraException($statusCode, $body, null, $retryAfter),
         };
+    }
+
+    /**
+     * @param array<string, mixed>|null $body
+     */
+    private function forbidden(?array $body): AraraException
+    {
+        $error = is_array($body['error'] ?? null) ? $body['error'] : [];
+        $code = is_string($error['code'] ?? null) ? $error['code'] : null;
+
+        if ($code === PlanFeatureLockedException::CODE) {
+            return new PlanFeatureLockedException($body);
+        }
+
+        return new ForbiddenException($body);
+    }
+
+    /**
+     * Corpo JSON vira array; texto cru não vazio vira ['message' => texto]; vazio vira null.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function decodeBody(string $raw): ?array
+    {
+        if ($raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        return ['message' => $raw];
     }
 
     private function parseRetryAfter(RequestException $e): ?int

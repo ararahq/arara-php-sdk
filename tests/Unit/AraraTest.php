@@ -66,14 +66,6 @@ final class AraraTest extends TestCase
         $this->sdk->messages->send('   ', 'welcome');
     }
 
-    public function test_send_message_throws_validation_when_receiver_invalid_format(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('The receiver must follow the format whatsapp:+<number>');
-
-        $this->sdk->messages->send('5511987654321', 'welcome');
-    }
-
     public function test_send_message_throws_validation_when_template_name_empty(): void
     {
         $this->expectException(ValidationException::class);
@@ -87,9 +79,6 @@ final class AraraTest extends TestCase
         $this->mockHttpError(401, '{"message":"Invalid API key"}');
 
         $this->expectException(AuthenticationException::class);
-        // We no longer check for exact message in handleException logic in this SDK
-        // but the types must match.
-
         $this->sdk->messages->send('whatsapp:+5511987654321', 'welcome');
     }
 

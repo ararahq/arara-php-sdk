@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Arara;
 
 use Arara\Http\RetryPolicy;
-use Arara\Resources\ApiKeys;
+use Arara\Resources\Auth;
 use Arara\Resources\Campaigns;
 use Arara\Resources\Contacts;
 use Arara\Resources\Conversations;
 use Arara\Resources\Messages;
 use Arara\Resources\Numbers;
-use Arara\Resources\Organizations;
+use Arara\Resources\OptOuts;
 use Arara\Resources\SmartLinks;
 use Arara\Resources\Templates;
-use Arara\Resources\Users;
 use Arara\Resources\Wallet;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
@@ -22,15 +21,11 @@ use GuzzleHttp\Middleware;
 
 final class Arara
 {
-    public const VERSION = '1.8.1';
+    public const VERSION = '2.0.0';
 
     public readonly Messages $messages;
 
     public readonly Templates $templates;
-
-    public readonly Users $users;
-
-    public readonly Organizations $organizations;
 
     public readonly Contacts $contacts;
 
@@ -44,7 +39,9 @@ final class Arara
 
     public readonly Campaigns $campaigns;
 
-    public readonly ApiKeys $apiKeys;
+    public readonly OptOuts $optOuts;
+
+    public readonly Auth $auth;
 
     public function __construct(Config $config, ?Client $http = null)
     {
@@ -52,15 +49,24 @@ final class Arara
 
         $this->messages = new Messages($client);
         $this->templates = new Templates($client);
-        $this->users = new Users($client);
-        $this->organizations = new Organizations($client);
         $this->contacts = new Contacts($client);
         $this->conversations = new Conversations($client);
         $this->wallet = new Wallet($client);
         $this->numbers = new Numbers($client);
         $this->smartLinks = new SmartLinks($client);
         $this->campaigns = new Campaigns($client);
-        $this->apiKeys = new ApiKeys($client);
+        $this->optOuts = new OptOuts($client);
+        $this->auth = new Auth($client);
+    }
+
+    public function auth(): Auth
+    {
+        return $this->auth;
+    }
+
+    public static function baseUri(Config $config): string
+    {
+        return rtrim($config->baseUrl, '/') . '/' . trim($config->apiVersion, '/') . '/';
     }
 
     private static function createClient(Config $config): Client
@@ -72,7 +78,7 @@ final class Arara
         ));
 
         return new Client([
-            'base_uri' => "{$config->baseUrl}/{$config->apiVersion}/",
+            'base_uri' => self::baseUri($config),
             'handler' => $stack,
             'timeout' => $config->timeout,
             'headers' => [

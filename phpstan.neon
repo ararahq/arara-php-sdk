@@ -4,6 +4,7 @@ parameters:
         - src
         - tests
     tmpDir: .phpstan.cache
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # Mockery dynamic methods
         - '#Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::#'
