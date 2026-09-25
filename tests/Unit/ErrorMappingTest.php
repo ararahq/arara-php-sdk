@@ -9,6 +9,7 @@ use Arara\Exceptions\AuthenticationException;
 use Arara\Exceptions\BadRequestException;
 use Arara\Exceptions\ForbiddenException;
 use Arara\Exceptions\InternalServerException;
+use Arara\Exceptions\NotFoundException;
 use Arara\Exceptions\PlanFeatureLockedException;
 use Arara\Exceptions\RateLimitException;
 use Arara\Exceptions\ValidationException;
@@ -34,18 +35,39 @@ final class ErrorMappingTest extends TestCase
         $this->assertSame(['feature' => 'canUseFlows', 'currentPlan' => 'DECOLAGEM', 'upgradeTo' => 'VOO'], $e->details);
     }
 
-    public function test_403_without_code_is_an_authentication_failure(): void
+    public function test_403_without_envelope_is_forbidden_with_body_message(): void
     {
-        $e = $this->capture(new Response(403, [], '{"timestamp":"x","status":403,"error":"Forbidden","path":"/v1/templates"}'));
+        $e = $this->capture(new Response(403, [], '{"timestamp":"x","status":403,"error":"Forbidden","message":"API Key permission insufficient","path":"/v1/templates"}'));
 
-        $this->assertInstanceOf(AuthenticationException::class, $e);
+        $this->assertInstanceOf(ForbiddenException::class, $e);
+        $this->assertNotInstanceOf(AuthenticationException::class, $e);
         $this->assertSame(403, $e->statusCode);
         $this->assertNull($e->errorCode);
+        $this->assertSame('API Key permission insufficient', $e->getMessage());
     }
 
-    public function test_403_with_empty_body_is_an_authentication_failure(): void
+    public function test_403_with_empty_body_is_forbidden(): void
     {
-        $this->assertInstanceOf(AuthenticationException::class, $this->capture(new Response(403)));
+        $e = $this->capture(new Response(403));
+
+        $this->assertInstanceOf(ForbiddenException::class, $e);
+        $this->assertSame('HTTP 403', $e->getMessage());
+    }
+
+    public function test_403_with_plain_text_body_uses_text_as_message(): void
+    {
+        $e = $this->capture(new Response(403, [], 'Access Denied'));
+
+        $this->assertInstanceOf(ForbiddenException::class, $e);
+        $this->assertSame('Access Denied', $e->getMessage());
+    }
+
+    public function test_404_with_empty_body_is_not_found(): void
+    {
+        $e = $this->capture(new Response(404));
+
+        $this->assertInstanceOf(NotFoundException::class, $e);
+        $this->assertSame(404, $e->statusCode);
     }
 
     public function test_403_with_other_business_code_is_forbidden(): void

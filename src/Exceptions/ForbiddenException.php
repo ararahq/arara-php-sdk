@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Arara\Exceptions;
 
 /**
- * 403 de regra de negócio com código no envelope (ex.: RESOURCE_FORBIDDEN).
+ * Qualquer 403. `errorCode` vem preenchido quando a API manda o envelope (ex.: RESOURCE_FORBIDDEN)
+ * e fica nulo no 403 sem envelope (chave sem permissão, recurso de outra organização).
+ * PLAN_FEATURE_LOCKED tem subclasse própria.
  */
 class ForbiddenException extends AraraException
 {

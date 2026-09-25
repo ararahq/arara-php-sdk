@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Arara\Exceptions;
 
 /**
- * Chave inválida, expirada, sem permissão ou ausente.
- *
- * A API responde 403 sem envelope nesses casos (nunca 401); 401 também cai aqui.
+ * HTTP 401. Hoje a API responde 403 (ForbiddenException) para chave inválida.
  */
 final class AuthenticationException extends AraraException
 {

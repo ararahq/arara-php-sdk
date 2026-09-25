@@ -28,7 +28,7 @@ $sdk = new Arara($config);
 
 ## Permissões da chave
 
-Chave com permissão `READ` só lê messages, campaigns, templates, numbers, automations, flows e charges. **`contacts`, `conversations`, `wallet`, `smartLinks`, `optOuts` (leitura) e `auth()->me()` exigem chave `ADMIN`.** Sem permissão, a API responde 403 e o SDK lança `AuthenticationException` (statusCode 403).
+Chave com permissão `READ` só lê messages, campaigns, templates, numbers, automations, flows e charges. **`contacts`, `conversations`, `wallet`, `smartLinks`, `optOuts` (leitura) e `auth()->me()` exigem chave `ADMIN`.** Sem permissão, a API responde 403 e o SDK lança `ForbiddenException`.
 
 ## Resources
 
@@ -153,10 +153,11 @@ Toda falha HTTP vira uma `Arara\Exceptions\AraraException` com `statusCode`, `er
 | Situação | Exceção |
 |---|---|
 | 400 | `BadRequestException` |
-| 401, ou 403 sem código (chave inválida/sem permissão) | `AuthenticationException` |
-| 403 `PLAN_FEATURE_LOCKED` | `PlanFeatureLockedException` (`feature`, `currentPlan`, `upgradeTo`) |
-| outro 403 com código | `ForbiddenException` |
-| 404 | `NotFoundException` |
+| 401 | `AuthenticationException` |
+| 403 sem envelope ou vazio (chave inválida/sem permissão, recurso de outra organização) | `ForbiddenException` com `errorCode` nulo e a mensagem do corpo, se houver |
+| 403 com código no envelope (ex.: `RESOURCE_FORBIDDEN`) | `ForbiddenException` com `errorCode` |
+| 403 `PLAN_FEATURE_LOCKED` | `PlanFeatureLockedException` (subclasse de `ForbiddenException`: `feature`, `currentPlan`, `upgradeTo`) |
+| 404 (com ou sem corpo) | `NotFoundException` |
 | 422 | `ValidationException` |
 | 429 | `RateLimitException` (`retryAfter`) |
 | 5xx | `InternalServerException` |

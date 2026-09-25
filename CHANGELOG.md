@@ -9,12 +9,12 @@ Todas as mudanças relevantes do `ararahq/sdk` (PHP). Formato baseado em [Keep a
 - `templates->get()`, `templates->delete()` recebem o `id` (UUID) do template, não o nome. Para achar pelo nome: `templates->list(name: 'welcome')`.
 - `templates->list()` e `smartLinks->list()` devolvem `Arara\Pagination\PaginatedResponse` (`data` + `pagination`) em vez de array cru, e aceitam `page`/`size`.
 - `messages->send()` aceita `whatsapp:+55...`, `+55...` ou só dígitos (quem valida é a API). A mídia vai como `mediaUrl`.
-- 403 sem código no envelope (falha de chave/permissão) vira `AuthenticationException` com `statusCode` 403. 5xx (502, 503...) vira `InternalServerException` com o status real.
+- Todo 403 vira `ForbiddenException` (antes era `AraraException` genérica): sem envelope ou vazio (chave sem permissão, recurso de outra organização) com `errorCode` nulo e a mensagem do corpo quando houver; com envelope, `errorCode` preenchido; `PLAN_FEATURE_LOCKED` vira a subclasse `PlanFeatureLockedException`. 401 continua `AuthenticationException`. 5xx (502, 503...) vira `InternalServerException` com o status real.
 - Retry automático nunca repete POST/PATCH sem `Idempotency-Key`.
 
 ### Adicionado
 - `Idempotency-Key` automático (UUID v4) em `messages->send()`, `messages->sendBatch()` e `campaigns->create()`, reaproveitado em todos os retries da mesma chamada. O caller pode passar a própria chave.
-- `PlanFeatureLockedException` (403 `PLAN_FEATURE_LOCKED`) com `feature`, `currentPlan`, `upgradeTo`; `ForbiddenException` para outros 403 de negócio.
+- `PlanFeatureLockedException` (403 `PLAN_FEATURE_LOCKED`) com `feature`, `currentPlan`, `upgradeTo`; `ForbiddenException` para os demais 403.
 - `AraraException` expõe `details` e `retryAfter`.
 - `messages->get($id)`, `messages->sendBatch($templateName, $messages)` (até 1000).
 - `templates->getStatus($id)`, `templates->analytics($id = null, $period = '30d')`.

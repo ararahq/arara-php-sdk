@@ -123,8 +123,7 @@ abstract class BaseResource
     private function handleException(RequestException $e): AraraException
     {
         $statusCode = $e->getResponse()?->getStatusCode() ?? InternalServerException::DEFAULT_STATUS;
-        $body = json_decode((string) $e->getResponse()?->getBody(), true);
-        $body = is_array($body) ? $body : null;
+        $body = self::decodeBody(trim((string) $e->getResponse()?->getBody()));
         $retryAfter = $this->parseRetryAfter($e);
 
         return match (true) {
@@ -147,15 +146,31 @@ abstract class BaseResource
         $error = is_array($body['error'] ?? null) ? $body['error'] : [];
         $code = is_string($error['code'] ?? null) ? $error['code'] : null;
 
-        if ($code === null) {
-            return new AuthenticationException($body, ForbiddenException::STATUS);
-        }
-
         if ($code === PlanFeatureLockedException::CODE) {
             return new PlanFeatureLockedException($body);
         }
 
         return new ForbiddenException($body);
+    }
+
+    /**
+     * Corpo JSON vira array; texto cru não vazio vira ['message' => texto]; vazio vira null.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function decodeBody(string $raw): ?array
+    {
+        if ($raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        return ['message' => $raw];
     }
 
     private function parseRetryAfter(RequestException $e): ?int
