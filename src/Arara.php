@@ -64,6 +64,11 @@ final class Arara
         return $this->auth;
     }
 
+    public static function baseUri(Config $config): string
+    {
+        return rtrim($config->baseUrl, '/') . '/' . trim($config->apiVersion, '/') . '/';
+    }
+
     private static function createClient(Config $config): Client
     {
         $stack = HandlerStack::create();
@@ -73,7 +78,7 @@ final class Arara
         ));
 
         return new Client([
-            'base_uri' => "{$config->baseUrl}/{$config->apiVersion}/",
+            'base_uri' => self::baseUri($config),
             'handler' => $stack,
             'timeout' => $config->timeout,
             'headers' => [

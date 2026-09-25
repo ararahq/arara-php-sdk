@@ -22,6 +22,17 @@ final class ResourcesTest extends TestCase
         $this->assertSame('https://api.ararahq.com/auth/me', (string) $http->request(0)->getUri());
     }
 
+    public function test_base_uri_ignores_trailing_slashes_in_config(): void
+    {
+        $this->assertSame('https://api.test/v1/', Arara::baseUri(new Config(apiKey: 'k', baseUrl: 'https://api.test/')));
+        $this->assertSame('https://api.test/v1/', Arara::baseUri(new Config(apiKey: 'k', baseUrl: 'https://api.test')));
+
+        $http = new RecordingClient([new Response(200, [], '{}')], new Config(apiKey: 'k', baseUrl: 'https://api.test//', retryDelayMs: 0));
+        (new Arara(new Config(apiKey: 'k'), $http->client))->messages->get('m1');
+
+        $this->assertSame('https://api.test/v1/messages/m1', (string) $http->request(0)->getUri());
+    }
+
     public function test_sdk_no_longer_exposes_resources_unreachable_by_api_key(): void
     {
         $reflection = new \ReflectionClass(Arara::class);

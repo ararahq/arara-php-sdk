@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arara\Tests\Support;
 
+use Arara\Arara;
 use Arara\Config;
 use Arara\Http\RetryPolicy;
 use GuzzleHttp\Client;
@@ -34,7 +35,7 @@ final class RecordingClient
         $stack->push(Middleware::history($this->history));
 
         $this->client = new Client([
-            'base_uri' => "{$config->baseUrl}/{$config->apiVersion}/",
+            'base_uri' => Arara::baseUri($config),
             'handler' => $stack,
         ]);
     }
