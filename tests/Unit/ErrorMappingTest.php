@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arara\Tests\Unit;
 
+use Arara\Config;
 use Arara\Exceptions\AraraException;
 use Arara\Exceptions\AuthenticationException;
 use Arara\Exceptions\BadRequestException;
@@ -13,6 +14,7 @@ use Arara\Exceptions\NotFoundException;
 use Arara\Exceptions\PlanFeatureLockedException;
 use Arara\Exceptions\RateLimitException;
 use Arara\Exceptions\ValidationException;
+use Arara\Resources\Messages;
 use Arara\Resources\Templates;
 use Arara\Tests\Support\RecordingClient;
 use GuzzleHttp\Psr7\Response;
@@ -20,6 +22,8 @@ use PHPUnit\Framework\TestCase;
 
 final class ErrorMappingTest extends TestCase
 {
+    private const TOTAL_ATTEMPTS = Config::DEFAULT_RETRY_TIMES + 1;
+
     public function test_403_plan_feature_locked_becomes_typed_exception_with_details(): void
     {
         $body = '{"error":{"code":"PLAN_FEATURE_LOCKED","message":"Essa feature está liberada a partir do plano Voo.","details":{"feature":"canUseFlows","currentPlan":"DECOLAGEM","upgradeTo":"VOO"}}}';
@@ -94,23 +98,52 @@ final class ErrorMappingTest extends TestCase
         $this->assertSame(409, $this->capture(new Response(409, [], '{"error":{"code":"CONFLICT"}}'))->statusCode);
     }
 
-    public function test_429_exposes_retry_after_after_retries_are_exhausted(): void
+    public function test_429_on_send_retries_four_times_with_same_key_then_exposes_retry_after(): void
     {
-        $e = $this->capture(...array_fill(0, 4, new Response(429, ['Retry-After' => '0'], '{"error":{"code":"BATCH_BUSY","message":"busy"}}')));
+        [$e, $http] = $this->captureSend(new Response(429, ['Retry-After' => '0'], '{"error":{"code":"BATCH_BUSY","message":"busy"}}'));
 
         $this->assertInstanceOf(RateLimitException::class, $e);
         $this->assertSame(0, $e->retryAfter);
         $this->assertSame('BATCH_BUSY', $e->errorCode);
+        $this->assertSameKeyOnEveryAttempt($http);
     }
 
-    public function test_503_is_server_exception_with_real_status_and_retry_after(): void
+    public function test_503_on_send_retries_four_times_with_same_key_then_is_server_exception(): void
     {
-        $e = $this->capture(...array_fill(0, 4, new Response(503, ['Retry-After' => '0'], '{"error":{"code":"SEND_TEMPORARILY_UNAVAILABLE"}}')));
+        [$e, $http] = $this->captureSend(new Response(503, ['Retry-After' => '0'], '{"error":{"code":"SEND_TEMPORARILY_UNAVAILABLE"}}'));
 
         $this->assertInstanceOf(InternalServerException::class, $e);
         $this->assertSame(503, $e->statusCode);
         $this->assertSame(0, $e->retryAfter);
         $this->assertSame('SEND_TEMPORARILY_UNAVAILABLE', $e->errorCode);
+        $this->assertSameKeyOnEveryAttempt($http);
+    }
+
+    /**
+     * @return array{AraraException, RecordingClient}
+     */
+    private function captureSend(Response $response): array
+    {
+        $http = new RecordingClient(array_fill(0, self::TOTAL_ATTEMPTS + 1, $response));
+
+        try {
+            (new Messages($http->client))->send('+5511987654321', 'welcome');
+        } catch (AraraException $e) {
+            return [$e, $http];
+        }
+
+        $this->fail('Expected AraraException');
+    }
+
+    private function assertSameKeyOnEveryAttempt(RecordingClient $http): void
+    {
+        $this->assertSame(self::TOTAL_ATTEMPTS, $http->count());
+        $key = $http->request(0)->getHeaderLine('Idempotency-Key');
+        $this->assertNotSame('', $key);
+
+        for ($i = 1; $i < self::TOTAL_ATTEMPTS; $i++) {
+            $this->assertSame($key, $http->request($i)->getHeaderLine('Idempotency-Key'));
+        }
     }
 
     private function capture(Response ...$responses): AraraException
