@@ -44,25 +44,14 @@ jobs:
         with:
           php-version: '8.3'
           coverage: none
-      - name: Ler Arara::VERSION
+      - name: Decidir versao
         id: version
         run: |
+          git fetch --tags --force
           VERSION=$(php -r 'require "src/Arara.php"; echo Arara\Arara::VERSION;')
-          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Versao invalida em Arara::VERSION: $VERSION" >&2
-            exit 1
-          fi
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-      - name: Verificar se a tag ja existe
-        id: exists
-        run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" > /dev/null; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          fi
+          scripts/release-version.sh "$VERSION" >> "$GITHUB_OUTPUT"
       - name: Criar tag e release
-        if: steps.exists.outputs.found == 'false'
+        if: steps.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "${{ steps.version.outputs.tag }}" --target "$GITHUB_SHA" --title "${{ steps.version.outputs.tag }}" --generate-notes
