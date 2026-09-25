@@ -107,6 +107,60 @@ final class MessagesTest extends TestCase
         $this->assertArrayNotHasKey('body', $payload);
     }
 
+    /**
+     * @return array<string, array{?string, ?string, array<string, mixed>}>
+     */
+    public static function invalidContentCombinations(): array
+    {
+        return [
+            'template and body' => ['welcome', 'oi', []],
+            'body and interactive' => [null, 'oi', ['interactive' => ['type' => 'button']]],
+            'template and location' => ['welcome', null, ['location' => ['latitude' => 1]]],
+            'nothing' => [null, null, []],
+            'blank body only' => [null, '', ['sender' => '+5511900000000']],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $extra
+     */
+    #[DataProvider('invalidContentCombinations')]
+    public function test_should_reject_anything_but_exactly_one_content_type_before_posting(?string $template, ?string $body, array $extra): void
+    {
+        $http = new RecordingClient([]);
+
+        try {
+            (new Messages($http->client))->send('+5511987654321', $template, body: $body, extra: $extra);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('exactly one content type', $e->getMessage());
+            $this->assertSame(0, $http->count());
+        }
+    }
+
+    public function test_should_send_interactive_given_through_extra(): void
+    {
+        $http = new RecordingClient([new Response(202, [], '{}')]);
+
+        (new Messages($http->client))->send('+5511987654321', extra: ['interactive' => ['type' => 'button']]);
+
+        $payload = json_decode((string) $http->request(0)->getBody(), true);
+        $this->assertSame(['type' => 'button'], $payload['interactive']);
+    }
+
+    public function test_should_reject_reserved_fields_inside_extra(): void
+    {
+        $http = new RecordingClient([]);
+
+        try {
+            (new Messages($http->client))->send('+5511987654321', 'welcome', extra: ['body' => 'oi', 'receiver' => '1']);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('body, receiver', $e->getMessage());
+            $this->assertSame(0, $http->count());
+        }
+    }
+
     public function test_should_reject_blank_receiver_locally(): void
     {
         $this->expectException(ValidationException::class);

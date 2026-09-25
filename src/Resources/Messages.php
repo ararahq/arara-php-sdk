@@ -10,6 +10,12 @@ final class Messages extends BaseResource
 {
     public const MAX_BATCH_SIZE = 1000;
 
+    /** Campos que têm parâmetro próprio em send() e por isso não podem vir em $extra. */
+    private const RESERVED_EXTRA_KEYS = ['receiver', 'templateName', 'templateVariables', 'variables', 'body', 'mediaUrl', 'media_url'];
+
+    /** Tipos de conteúdo do SendMessageRequest: a API exige exatamente um (isValidPayload). */
+    private const OBJECT_CONTENT_KEYS = ['interactive', 'location', 'reaction'];
+
     /**
      * POST /v1/messages.
      *
@@ -37,6 +43,11 @@ final class Messages extends BaseResource
             throw new ValidationException(['message' => 'The templateName field is required.']);
         }
 
+        $reserved = array_values(array_intersect(array_keys($extra), self::RESERVED_EXTRA_KEYS));
+        if ($reserved !== []) {
+            throw new ValidationException(['message' => 'Pass ' . implode(', ', $reserved) . ' as named arguments, not inside extra.']);
+        }
+
         $payload = array_merge($extra, ['receiver' => trim($receiver)]);
 
         if ($templateName !== null) {
@@ -51,6 +62,8 @@ final class Messages extends BaseResource
         if ($mediaUrl !== null && $mediaUrl !== '') {
             $payload['mediaUrl'] = $mediaUrl;
         }
+
+        self::assertSingleContentType($payload);
 
         return $this->httpPost('messages', $this->withIdempotencyKey(['json' => $payload], $idempotencyKey));
     }
@@ -78,6 +91,34 @@ final class Messages extends BaseResource
         return $this->httpPost('messages/batch', $this->withIdempotencyKey([
             'json' => ['templateName' => $templateName, 'messages' => array_values($messages)],
         ], $idempotencyKey));
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function assertSingleContentType(array $payload): void
+    {
+        $present = [];
+
+        foreach (['templateName', 'body'] as $key) {
+            if (is_string($payload[$key] ?? null) && trim($payload[$key]) !== '') {
+                $present[] = $key;
+            }
+        }
+
+        foreach (self::OBJECT_CONTENT_KEYS as $key) {
+            if (($payload[$key] ?? null) !== null) {
+                $present[] = $key;
+            }
+        }
+
+        if (count($present) === 1) {
+            return;
+        }
+
+        $found = $present === [] ? 'none' : implode(', ', $present);
+
+        throw new ValidationException(['message' => "Send exactly one content type: templateName, body, interactive, location or reaction (got {$found})."]);
     }
 
     /**
