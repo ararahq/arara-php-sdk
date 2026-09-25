@@ -28,7 +28,20 @@ $sdk = new Arara($config);
 
 ## Permissões da chave
 
-Chave com permissão `READ` só lê messages, campaigns, templates, numbers, automations, flows e charges. **`contacts`, `conversations`, `wallet`, `smartLinks`, `optOuts` (leitura) e `auth()->me()` exigem chave `ADMIN`.** Sem permissão, a API responde 403 e o SDK lança `ForbiddenException`.
+A API confere a permissão da chave por método e caminho (`ApiKeyAuthFilter`). Chave `ADMIN` libera tudo. Sem permissão, a API responde 403 e o SDK lança `ForbiddenException`.
+
+| Recurso | Leitura (GET) | Escrita (POST/PATCH/PUT/DELETE) |
+|---|---|---|
+| `messages` | `READ` | `MESSAGES_SEND` |
+| `templates` | `READ` | `TEMPLATES_WRITE` |
+| `campaigns` | `READ` | `CAMPAIGNS_SEND` |
+| `numbers` | `READ` | `ADMIN` |
+| `contacts` | `ADMIN` | `CONTACTS_WRITE` |
+| `conversations` | `ADMIN` | `ADMIN` |
+| `wallet` | `ADMIN` | `ADMIN` |
+| `smartLinks` | `ADMIN` | `ADMIN` |
+| `optOuts` | `ADMIN` | `ADMIN` |
+| `auth()->me()` | `ADMIN` | n/a |
 
 ## Resources
 
@@ -96,7 +109,7 @@ $sdk->templates->create([
     'category' => 'MARKETING',
     'language' => 'pt_BR',
     'body' => 'Hi {{1}}, check our Christmas deals!',
-    'samples' => ['John'],
+    'samples' => ['1' => 'John'],
 ]);
 
 $sdk->templates->delete($welcome['id']);
