@@ -1,12 +1,13 @@
 {
     "name": "ararahq/sdk",
-    "description": "Official PHP SDK for AraraHQ platform. Simple, typed, and developer-first.",
+    "description": "PHP SDK for the AraraHQ API. AraraHQ: WhatsApp for Brazilian companies. Team inbox with AI, campaigns and systems connected through the API.",
     "keywords": [
+        "ararahq",
         "whatsapp",
+        "whatsapp-business",
         "arara",
         "sdk",
         "api",
-        "sms",
         "messaging",
         "brazil"
     ],

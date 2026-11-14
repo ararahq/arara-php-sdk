@@ -5,7 +5,9 @@
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Docs](https://img.shields.io/badge/Docs-docs.ararahq.com-orange)](https://docs.ararahq.com)
 
-Official PHP SDK for **[AraraHQ](https://ararahq.com)** — the developer-first WhatsApp API. Simple, typed, and developer-first.
+Official PHP SDK for the **[AraraHQ](https://ararahq.com)** API. Simple and typed.
+
+AraraHQ: WhatsApp for Brazilian companies. Team inbox with AI, campaigns and systems connected through the API.
 
 ## Installation
 
