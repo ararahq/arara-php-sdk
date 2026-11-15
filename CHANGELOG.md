@@ -2,6 +2,11 @@
 
 Todas as mudanças relevantes do `ararahq/sdk` (PHP). Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [2.0.1] - 2026-11-15
+
+### Alterado
+- Descrição do pacote e README alinhados à descrição atual da AraraHQ. Sem mudança de código.
+
 ## [2.0.0] - 2026-09-24
 
 ### Breaking

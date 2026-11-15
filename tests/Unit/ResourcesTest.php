@@ -40,7 +40,7 @@ final class ResourcesTest extends TestCase
         foreach (['users', 'organizations', 'apiKeys'] as $removed) {
             $this->assertFalse($reflection->hasProperty($removed), $removed);
         }
-        $this->assertSame('2.0.0', Arara::VERSION);
+        $this->assertSame('2.0.1', Arara::VERSION);
     }
 
     public function test_smart_links_list_is_paginated(): void
