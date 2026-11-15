@@ -21,7 +21,7 @@ use GuzzleHttp\Middleware;
 
 final class Arara
 {
-    public const VERSION = '2.0.0';
+    public const VERSION = '2.0.1';
 
     public readonly Messages $messages;
 
